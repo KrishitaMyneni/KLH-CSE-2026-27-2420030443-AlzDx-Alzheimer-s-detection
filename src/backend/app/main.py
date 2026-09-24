@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.database.connection import test_database_connection
+
 app = FastAPI(
     title="AlzDx API",
     description="Backend API for the Alzheimer's Disease Detection System",
@@ -25,6 +27,17 @@ def root():
 
 @app.get("/health")
 def health_check():
-    return {
-        "status": "healthy"
-    }
+    try:
+        test_database_connection()
+
+        return {
+            "status": "healthy",
+            "database": "connected",
+        }
+
+    except Exception as error:
+        return {
+            "status": "unhealthy",
+            "database": "disconnected",
+            "error": str(error),
+        }
