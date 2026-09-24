@@ -12,129 +12,61 @@ function Layout({ title, subtitle, children }) {
   ];
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "var(--background)",
-      }}
-    >
+    <div style={{ minHeight: "100vh", background: "var(--background)" }}>
       {/* Top Navigation */}
       <header
-        style={{
-          background: "white",
-          borderBottom: "1px solid var(--border)",
-          position: "sticky",
-          top: 0,
-          zIndex: 100,
-        }}
+        className="app-header"
       >
-        <div
-          style={{
-            maxWidth: "1200px",
-            margin: "0 auto",
-            padding: "18px 24px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <div
+        <div className="nav-shell">
+          <button
+            type="button"
+            className="brand-button"
             onClick={() => navigate("/")}
-            style={{
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-            }}
+            aria-label="AlzDx home"
           >
-            <div
-              style={{
-                width: "38px",
-                height: "38px",
-                borderRadius: "12px",
-                background: "var(--primary)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "white",
-              }}
-            >
+            <span className="brand-mark">
               <Brain size={20} />
-            </div>
-
+            </span>
             <h2 style={{ color: "var(--text)", margin: 0 }}>AlzDx</h2>
-          </div>
+          </button>
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-            }}
-          >
+          <div className="nav-actions">
+            <nav className="nav-list" aria-label="Main navigation">
             {navItems.map((item) => {
               const Icon = item.icon;
 
               return (
                 <button
                   key={item.path}
+                  type="button"
                   onClick={() => navigate(item.path)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    background:
-                      location.pathname === item.path
-                        ? "var(--primary)"
-                        : "transparent",
-                    color:
-                      location.pathname === item.path
-                        ? "white"
-                        : "var(--text)",
-                    border: "none",
-                    padding: "10px 16px",
-                    borderRadius: "999px",
-                    cursor: "pointer",
-                    fontWeight: "600",
-                  }}
+                  className={`nav-link${location.pathname === item.path ? " is-active" : ""}`}
+                  aria-current={location.pathname === item.path ? "page" : undefined}
+                  aria-label={item.label}
                 >
                   <Icon size={18} />
-                  {item.label}
+                  <span>{item.label}</span>
                 </button>
               );
             })}
+            </nav>
 
-            <div
+            <button
+              type="button"
+              className="profile-button"
               onClick={() => navigate("/profile")}
-              style={{
-                width: "42px",
-                height: "42px",
-                borderRadius: "50%",
-                background: "var(--secondary)",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                cursor: "pointer",
-                marginLeft: "8px",
-                color: "var(--text)",
-              }}
+              aria-label="Profile"
             >
               <User size={20} />
-            </div>
+            </button>
           </div>
         </div>
       </header>
 
       {/* Page Content */}
-      <main
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          padding: "40px 24px",
-        }}
-      >
-        <div style={{ marginBottom: "28px" }}>
-          <h1 style={{ marginBottom: "8px", fontSize: "36px" }}>{title}</h1>
+      <main className="page-main">
+        <div className="page-heading">
+          <h1>{title}</h1>
 
           {subtitle && (
             <p style={{ color: "var(--text-light)" }}>{subtitle}</p>

@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { ArrowRight, Brain } from "lucide-react";
 import Layout from "../components/Layout";
 
 function Dashboard() {
@@ -52,7 +53,7 @@ function Dashboard() {
               cursor: "pointer",
             }}
           >
-            Start Assessment →
+            Start Assessment <ArrowRight size={17} aria-hidden="true" />
           </button>
         </div>
 
@@ -68,7 +69,7 @@ function Dashboard() {
             fontSize: "56px",
           }}
         >
-          🧠
+          <Brain size={58} aria-hidden="true" />
         </div>
       </div>
 

@@ -1,5 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  Activity,
+  CheckCircle2,
+  Clock3,
+  MessageCircle,
+  Pause,
+  Repeat2,
+  Timer,
+} from "lucide-react";
 import Layout from "../components/Layout";
 import ImageCard from "../components/ImageCard";
 import VoiceRecorder from "../components/VoiceRecorder";
@@ -11,7 +20,9 @@ function Assessment() {
 
   const [text, setText] = useState("");
   const [result, setResult] = useState(null);
+  const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(false);
+  const confidenceValue = Math.min(100, Math.max(0, Number(result?.confidence) || 0));
 
   const handleAnalyze = async () => {
     if (!text.trim()) {
@@ -42,50 +53,28 @@ function Assessment() {
       <ImageCard src={cookieTheftImage} />
 
       {/* Voice Recorder */}
-      <VoiceRecorder onTranscriptReady={setText} />
+      <VoiceRecorder
+        onTranscriptReady={(transcript, extractedMetrics) => {
+          setText(transcript);
+          setMetrics(extractedMetrics);
+        }}
+      />
 
       {/* Transcript */}
-      <div
-        className="card"
-        style={{
-          padding: "24px",
-          marginTop: "24px",
-          marginBottom: "24px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "16px",
-            flexWrap: "wrap",
-            gap: "8px",
-          }}
-        >
-          <h3 style={{ margin: 0 }}>Transcript</h3>
+      <section className="card section-card" aria-labelledby="transcript-heading">
+        <div className="transcript-meta" style={{ marginBottom: 12 }}>
+          <h3 id="transcript-heading" style={{ margin: 0 }}>Transcript</h3>
 
           {text && (
-            <span
-              style={{
-                background: "rgba(88,169,166,.12)",
-                color: "var(--primary)",
-                padding: "6px 12px",
-                borderRadius: "999px",
-                fontSize: "13px",
-                fontWeight: "600",
-              }}
-            >
+            <span className="status-pill">
+              <CheckCircle2 size={15} aria-hidden="true" />
               Auto-transcribed
             </span>
           )}
         </div>
 
         <p
-          style={{
-            color: "var(--text-light)",
-            marginBottom: "16px",
-          }}
+          style={{ color: "var(--text-light)", marginBottom: "16px" }}
         >
           Your transcript is generated automatically after recording or uploading
           audio. You can edit it before running the analysis.
@@ -96,137 +85,123 @@ function Assessment() {
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Your transcript will appear here automatically..."
-          style={{
-            width: "100%",
-            padding: "16px",
-            borderRadius: "14px",
-            border: "1px solid var(--border)",
-            resize: "vertical",
-            fontSize: "15px",
-            lineHeight: 1.6,
-          }}
+          className="transcript-input"
+          aria-label="Editable assessment transcript"
         />
-      </div>
+        <div className="transcript-meta" style={{ marginTop: 9 }}>
+          {!text && <span className="empty-state">No transcript yet. Record or upload audio to begin.</span>}
+          <span className="character-count" aria-live="polite">{text.length} characters</span>
+        </div>
+      </section>
 
       {/* Analyze */}
       <button
         onClick={handleAnalyze}
         disabled={loading || !text.trim()}
-        style={{
-          width: "100%",
-          padding: "16px",
-          borderRadius: "14px",
-          border: "none",
-          background: loading || !text.trim()
-            ? "var(--secondary)"
-            : "var(--primary)",
-          color: "white",
-          fontSize: "16px",
-          fontWeight: "600",
-          cursor: loading || !text.trim()
-            ? "not-allowed"
-            : "pointer",
-        }}
+        className="button button-primary"
+        style={{ width: "100%", minHeight: 54, marginTop: 22, fontSize: 16 }}
+        aria-busy={loading}
       >
-        {loading ? "Analyzing..." : "Analyze Assessment"}
+        {loading && <span className="loading-spinner" aria-hidden="true" />}
+        {loading ? "Analyzing assessment..." : "Analyze Assessment"}
       </button>
+
+      {loading && (
+        <div className="result-skeleton" aria-label="Loading assessment results" role="status">
+          {Array.from({ length: 6 }).map((_, index) => <div className="skeleton-card" key={index} />)}
+        </div>
+      )}
 
       {/* Result */}
       {result && (
-        <div
-          className="card"
-          style={{
-            marginTop: "28px",
-            padding: "24px",
-          }}
-        >
+        <section className="card result-panel" aria-labelledby="result-heading">
           <h2 style={{ marginBottom: "18px" }}>Prediction Result</h2>
 
-          <div
-            style={{
-              background: "var(--primary)",
-              color: "white",
-              borderRadius: "18px",
-              padding: "24px",
-              marginBottom: "20px",
-            }}
-          >
-            <h1 style={{ marginBottom: "10px" }}>{result.prediction}</h1>
-
-            <p>Confidence: {result.confidence}%</p>
+          <div className="result-summary">
+            <div>
+              <span className="status-pill">Screening Result</span>
+              <h1 className="result-title" id="result-heading">{result.prediction}</h1>
+              <p className="result-copy">Assessment screening outcome</p>
+            </div>
+            <svg
+              className="confidence-ring"
+              viewBox="0 0 120 120"
+              role="img"
+              aria-label={`Confidence ${result.confidence}%`}
+            >
+              <circle cx="60" cy="60" r="49" fill="none" stroke="#e6efec" strokeWidth="9" />
+              <circle
+                cx="60" cy="60" r="49" fill="none" stroke="var(--primary)" strokeWidth="9"
+                strokeLinecap="round" strokeDasharray={`${2 * Math.PI * 49}`}
+                strokeDashoffset={`${2 * Math.PI * 49 * (1 - confidenceValue / 100)}`}
+                transform="rotate(-90 60 60)"
+                style={{ transition: "stroke-dashoffset 700ms ease" }}
+              />
+              <text x="60" y="57" textAnchor="middle" fill="var(--text)" fontSize="23" fontWeight="750">
+                {result.confidence}%
+              </text>
+              <text x="60" y="75" textAnchor="middle" fill="var(--text-light)" fontSize="10">
+                confidence
+              </text>
+            </svg>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "2fr 1fr",
-              gap: "18px",
-            }}
-          >
-            <div
-              style={{
-                background: "#F6F9F8",
-                borderRadius: "16px",
-                padding: "18px",
-              }}
-            >
+          <div className="result-content">
+            <div className="analysis-panel">
               <h3 style={{ marginBottom: "12px" }}>Linguistic Analysis</h3>
 
-              <p style={{ color: "var(--text-light)" }}>
-                EXP8 attention insights, linguistic features, pause statistics,
-                hesitation counts, and explainable AI results will appear here
-                after the final model integration.
-              </p>
+              <div className="metric-grid">
+                {[
+                  { label: "Speech Rate", key: "speech_rate", suffix: " WPM", Icon: Activity },
+                  { label: "Pause Count", key: "pause_count", suffix: "", Icon: Pause },
+                  { label: "Total Pause", key: "total_pause_seconds", suffix: " s", Icon: Clock3 },
+                  { label: "Average Pause", key: "average_pause_seconds", suffix: " s", Icon: Timer },
+                  { label: "Hesitations", key: "hesitation_count", suffix: "", Icon: MessageCircle },
+                  { label: "Repetitions", key: "repetition_count", suffix: "", Icon: Repeat2 },
+                ].map(({ label, key, suffix, Icon }) => {
+                  const value = metrics?.[key];
+                  return (
+                    <div className="metric-card" key={key}>
+                      <span className="metric-icon"><Icon size={18} aria-hidden="true" /></span>
+                      <div>
+                        <div className="metric-label">{label}</div>
+                        <strong className="metric-value">
+                        {value === null || value === undefined ? "Unavailable" : `${value}${suffix}`}
+                        </strong>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "14px",
-              }}
-            >
+            <div className="result-actions">
               <button
-                style={{
-                  background: "var(--primary)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "12px",
-                  padding: "14px",
-                  cursor: "pointer",
-                }}
+                className="button button-primary"
               >
                 Download PDF
               </button>
 
               <button
                 onClick={() => navigate("/history")}
-                style={{
-                  background: "white",
-                  border: "1px solid var(--border)",
-                  borderRadius: "12px",
-                  padding: "14px",
-                  cursor: "pointer",
-                }}
+                className="button button-secondary"
               >
                 Previous Analyses
               </button>
 
               <button
-                style={{
-                  background: "var(--info)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "999px",
-                  padding: "14px",
-                  cursor: "pointer",
-                }}
+                className="button button-secondary"
+                disabled
+                title="AI Assistant will be available in a future update"
               >
                 AI Assistant (Soon)
               </button>
             </div>
           </div>
-        </div>
+          <p className="medical-disclaimer">
+            This result is for educational screening only and is not a diagnosis. Please discuss health concerns with a qualified healthcare professional.
+          </p>
+        </section>
       )}
     </Layout>
   );

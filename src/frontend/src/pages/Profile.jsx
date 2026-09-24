@@ -1,4 +1,5 @@
 import Layout from "../components/Layout";
+import { UserRound } from "lucide-react";
 
 function Profile() {
   return (
@@ -35,7 +36,7 @@ function Profile() {
               fontSize: "34px",
             }}
           >
-            👤
+            <UserRound size={36} aria-hidden="true" />
           </div>
 
           <div style={{ flex: 1 }}>

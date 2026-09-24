@@ -8,3 +8,4 @@ faster-whisper
 ctranslate2
 av
 soundfile
+numpy

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Mic, Square, Upload, Play, Pause, FileAudio } from "lucide-react";
+import { Mic, Square, Upload, FileAudio } from "lucide-react";
 import { transcribeAudio } from "../services/transcription";
 
 function VoiceRecorder({ onTranscriptReady }) {
@@ -7,7 +7,6 @@ function VoiceRecorder({ onTranscriptReady }) {
   const [seconds, setSeconds] = useState(0);
   const [audioURL, setAudioURL] = useState("");
   const [audioName, setAudioName] = useState("");
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [transcriptionError, setTranscriptionError] = useState("");
 
@@ -55,24 +54,25 @@ function VoiceRecorder({ onTranscriptReady }) {
 
   const transcribeFile = async (file) => {
     setTranscriptionError("");
+    onTranscriptReady?.("", null);
     if (!file.type.startsWith("audio/") && !/\.(webm|wav|mp3|m4a|ogg|flac|mp4|mpeg|mpga)$/i.test(file.name)) {
       setTranscriptionError("Unsupported file. Please choose a supported audio file.");
       return;
     }
-    console.log("🎯 Calling transcribe API...", file);
+    console.log(" Calling transcribe API...", file);
 
     try {
       setIsTranscribing(true);
 
       const result = await transcribeAudio(file);
 
-      console.log("✅ Transcript received:", result);
+      console.log(" Transcript received:", result);
 
       if (onTranscriptReady) {
-        onTranscriptReady(result.text || "");
+        onTranscriptReady(result.text || "", result.metrics || null);
       }
     } catch (err) {
-      console.error("❌ Transcription failed:", err);
+      console.error(" Transcription failed:", err);
       setTranscriptionError(err.message || "Transcription failed. Please try another audio file.");
     } finally {
       setIsTranscribing(false);
@@ -111,7 +111,7 @@ function VoiceRecorder({ onTranscriptReady }) {
       recorderRef.current = recorder;
 
       recorder.ondataavailable = (e) => {
-        console.log("📦 Chunk:", e.data.size);
+        console.log(" Chunk:", e.data.size);
 
         if (e.data.size > 0) {
           chunksRef.current.push(e.data);
@@ -119,13 +119,13 @@ function VoiceRecorder({ onTranscriptReady }) {
       };
 
       recorder.onstop = async () => {
-        console.log("🛑 MediaRecorder onstop fired");
+        console.log(" MediaRecorder onstop fired");
 
         const blob = new Blob(chunksRef.current, {
           type: recorder.mimeType || "audio/webm",
         });
 
-        console.log("🎵 Blob size:", blob.size);
+        console.log(" Blob size:", blob.size);
 
         const file = new File([blob], "recording.webm", {
           type: blob.type,
@@ -150,7 +150,7 @@ function VoiceRecorder({ onTranscriptReady }) {
 
       recorder.start();
 
-      console.log("🎙️ Recording started");
+      console.log(" Recording started");
 
       setIsRecording(true);
       setSeconds(0);
@@ -165,7 +165,7 @@ function VoiceRecorder({ onTranscriptReady }) {
   };
 
   const stopRecording = () => {
-    console.log("⏹️ Stop button clicked");
+    console.log(" Stop button clicked");
 
     recorderRef.current?.stop();
     clearInterval(timerRef.current);
@@ -177,7 +177,7 @@ function VoiceRecorder({ onTranscriptReady }) {
 
     if (!file) return;
 
-    console.log("📁 Uploaded:", file.name);
+    console.log(" Uploaded:", file.name);
 
     if (audioURL) URL.revokeObjectURL(audioURL);
 
@@ -186,35 +186,6 @@ function VoiceRecorder({ onTranscriptReady }) {
 
     await transcribeFile(file);
   };
-
-  const togglePlayback = async () => {
-    if (!audioRef.current) return;
-
-    if (audioRef.current.paused) {
-      await audioRef.current.play();
-    } else {
-      audioRef.current.pause();
-    }
-  };
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const onPlay = () => setIsPlaying(true);
-    const onPause = () => setIsPlaying(false);
-    const onEnd = () => setIsPlaying(false);
-
-    audio.addEventListener("play", onPlay);
-    audio.addEventListener("pause", onPause);
-    audio.addEventListener("ended", onEnd);
-
-    return () => {
-      audio.removeEventListener("play", onPlay);
-      audio.removeEventListener("pause", onPause);
-      audio.removeEventListener("ended", onEnd);
-    };
-  }, [audioURL]);
 
   useEffect(() => {
     return () => {
@@ -228,132 +199,65 @@ function VoiceRecorder({ onTranscriptReady }) {
   }, [audioURL]);
 
   return (
-    <div className="card" style={{ padding: 24, marginTop: 24 }}>
-      <h3 style={{ marginBottom: 20 }}>Audio Recording</h3>
+    <section className="card recorder-card" aria-labelledby="recorder-heading">
+      <div className="transcript-meta" style={{ marginBottom: 20 }}>
+        <h3 id="recorder-heading" style={{ margin: 0 }}>Audio Recording</h3>
+        {isRecording && <span className="recording-badge" role="status">Recording</span>}
+        {isTranscribing && <span className="status-pill" role="status"><span className="loading-spinner" style={{ borderColor: "rgba(88,169,166,.3)", borderTopColor: "var(--primary)" }} /> Transcribing audio</span>}
+      </div>
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 20,
-        }}
-      >
-        <div
-          style={{
-            width: 110,
-            height: 110,
-            borderRadius: "50%",
-            background: isRecording
-              ? "rgba(195,90,90,.12)"
-              : "rgba(88,169,166,.12)",
-            border: `3px solid ${
-              isRecording ? "var(--danger)" : "var(--primary)"
-            }`,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
+      <div className="recorder-stage">
+        <div className={`mic-orb${isRecording ? " is-recording" : ""}`} aria-hidden="true">
           <Mic
             size={42}
-            color={isRecording ? "var(--danger)" : "var(--primary)"}
           />
         </div>
 
-        <div
-          style={{
-            fontSize: 34,
-            fontWeight: 700,
-            color: isRecording ? "var(--danger)" : "var(--text)",
-          }}
-        >
+        <div className="recorder-time" style={{ color: isRecording ? "var(--danger)" : "var(--text)" }} aria-live="off">
           {formatTime(seconds)}
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 4,
-            alignItems: "center",
-            height: 54,
-          }}
-        >
+        <div className={`waveform${isRecording ? " is-recording" : ""}`} aria-hidden="true">
           {Array.from({ length: 26 }).map((_, i) => (
             <div
               key={i}
               ref={(el) => (barsRef.current[i] = el)}
+              className="wave-bar"
               style={{
-                width: 5,
                 height: 8,
-                borderRadius: 999,
                 background: isRecording
                   ? "var(--danger)"
                   : "var(--secondary)",
-                transition: "height 60ms linear",
+                animationDelay: `${(i % 6) * 75}ms`,
               }}
             />
           ))}
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            flexWrap: "wrap",
-            justifyContent: "center",
-          }}
-        >
+        <div className="recorder-controls">
           {!isRecording ? (
             <button
               onClick={startRecording}
-              style={{
-                background: "var(--primary)",
-                color: "white",
-                border: "none",
-                borderRadius: 999,
-                padding: "12px 22px",
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                cursor: "pointer",
-              }}
+              className="button button-round"
+              aria-label="Start recording"
+              title="Record"
             >
               <Mic size={18} />
-              Record
             </button>
           ) : (
             <button
               onClick={stopRecording}
-              style={{
-                background: "var(--danger)",
-                color: "white",
-                border: "none",
-                borderRadius: 999,
-                padding: "12px 22px",
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                cursor: "pointer",
-              }}
+              className="button button-round is-recording"
+              aria-label="Stop recording"
+              title="Stop recording"
             >
               <Square size={18} />
-              Stop
             </button>
           )}
 
           <button
             onClick={() => fileInputRef.current?.click()}
-            style={{
-              background: "white",
-              border: "1px solid var(--border)",
-              borderRadius: 999,
-              padding: "12px 22px",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              cursor: "pointer",
-            }}
+            className="button button-secondary"
           >
             <Upload size={18} />
             Upload
@@ -368,97 +272,25 @@ function VoiceRecorder({ onTranscriptReady }) {
           />
         </div>
 
-        {isTranscribing && (
-          <div
-            style={{
-              color: "var(--primary)",
-              fontWeight: 600,
-              marginTop: 8,
-            }}
-          >
-            Transcribing audio...
-          </div>
-        )}
-
         {transcriptionError && (
           <div role="alert" style={{ color: "var(--danger)", fontWeight: 600, marginTop: 8 }}>
             {transcriptionError}
           </div>
         )}
 
-        {audioURL && (
-          <div
-            style={{
-              width: "100%",
-              background: "#F6F9F8",
-              border: "1px solid var(--border)",
-              borderRadius: 18,
-              padding: 18,
-            }}
-          >
-            <audio ref={audioRef} src={audioURL} hidden />
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 16,
-              }}
-            >
-              <button
-                onClick={togglePlayback}
-                style={{
-                  width: 54,
-                  height: 54,
-                  borderRadius: "50%",
-                  border: "none",
-                  background: "var(--primary)",
-                  color: "white",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  cursor: "pointer",
-                }}
-              >
-                {isPlaying ? <Pause size={22} /> : <Play size={22} />}
-              </button>
-
-              <div style={{ flex: 1 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    marginBottom: 8,
-                  }}
-                >
-                  <FileAudio size={18} />
-                  <strong>{audioName}</strong>
-                </div>
-
-                <div
-                  style={{
-                    height: 6,
-                    background: "#DDEAE6",
-                    borderRadius: 999,
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: isPlaying ? "100%" : "0%",
-                      height: "100%",
-                      background: "var(--primary)",
-                      transition: "width .25s linear",
-                    }}
-                  />
-                </div>
-              </div>
+        {audioURL ? (
+          <div className="audio-player">
+            <FileAudio size={20} color="var(--primary-dark)" aria-hidden="true" />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <strong style={{ display: "block", marginBottom: 5, overflowWrap: "anywhere" }}>{audioName}</strong>
+              <audio ref={audioRef} src={audioURL} controls preload="metadata" aria-label={`Play ${audioName}`} />
             </div>
           </div>
+        ) : !isRecording && (
+          <p className="empty-state">No recording yet. Record a description or upload an audio file.</p>
         )}
       </div>
-    </div>
+    </section>
   );
 }
 

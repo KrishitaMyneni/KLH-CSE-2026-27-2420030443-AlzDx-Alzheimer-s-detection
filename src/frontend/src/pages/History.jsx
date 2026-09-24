@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { User } from "lucide-react";
 
 function History() {
   const navigate = useNavigate();
@@ -19,13 +20,7 @@ function History() {
   ];
 
   return (
-    <div
-      style={{
-        maxWidth: "900px",
-        margin: "40px auto",
-        padding: "20px",
-      }}
-    >
+    <main className="history-page">
       <div
         style={{
           display: "flex",
@@ -50,50 +45,36 @@ function History() {
             fontSize: "18px",
           }}
         >
-          👤
+          <User size={20} aria-hidden="true" />
         </div>
       </div>
 
-      {analyses.map((analysis) => (
-        <div
+      {analyses.length === 0 ? (
+        <div className="history-empty">
+          <h2 style={{ marginBottom: 7, color: "var(--text)" }}>No previous assessments</h2>
+          <p>Your completed screenings will appear here.</p>
+        </div>
+      ) : analyses.map((analysis) => (
+        <button
+          type="button"
+          className="history-item"
           key={analysis.id}
           onClick={() => navigate("/report")}
-          style={{
-            background: "#fff",
-            border: "1px solid #ddd",
-            borderRadius: "16px",
-            padding: "20px",
-            marginBottom: "16px",
-            cursor: "pointer",
-            transition: "0.2s",
-          }}
+          aria-label={`Open assessment from ${analysis.date}`}
         >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
+          <div className="history-item-content">
             <div>
               <h3 style={{ margin: "0 0 6px" }}>{analysis.date}</h3>
-
-              <p style={{ margin: 0, color: "#666" }}>
-                Cookie Theft Assessment
-              </p>
+              <p style={{ margin: 0, color: "var(--text-light)" }}>Cookie Theft Assessment</p>
             </div>
-
             <div style={{ textAlign: "right" }}>
               <strong>{analysis.confidence}</strong>
-
-              <p style={{ margin: "6px 0 0", color: "#2563eb" }}>
-                {analysis.prediction}
-              </p>
+              <p style={{ margin: "6px 0 0", color: "var(--primary-dark)" }}>{analysis.prediction}</p>
             </div>
           </div>
-        </div>
+        </button>
       ))}
-    </div>
+    </main>
   );
 }
 

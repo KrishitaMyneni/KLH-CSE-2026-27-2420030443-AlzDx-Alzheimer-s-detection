@@ -1,155 +1,112 @@
+import { useNavigate } from "react-router-dom";
+import {
+  ArrowRight,
+  Bot,
+  Brain,
+  ClipboardList,
+  FileDown,
+  History,
+  ShieldCheck,
+} from "lucide-react";
+import Layout from "../components/Layout";
+
 function AnalysisReport() {
+  const navigate = useNavigate();
+  const prediction = "Alzheimer's";
+  const confidence = 89.33;
+  const confidenceCircumference = 2 * Math.PI * 49;
+
   return (
-    <div
-      style={{
-        maxWidth: "900px",
-        margin: "40px auto",
-        padding: "20px",
-      }}
+    <Layout
+      title="Analysis Report"
+      subtitle="Cookie Theft speech assessment results"
     >
-      <h1 style={{ marginBottom: "8px" }}>Analysis Report</h1>
+      <section className="result-summary" aria-labelledby="report-prediction">
+        <div>
+          <span className="status-pill"><ShieldCheck size={15} /> Screening Result</span>
+          <h2 id="report-prediction" className="result-title">{prediction}</h2>
+          <p className="result-copy">Your speech assessment screening outcome</p>
+        </div>
+        <svg
+          className="confidence-ring"
+          viewBox="0 0 120 120"
+          role="img"
+          aria-label={`Confidence ${confidence}%`}
+        >
+          <circle cx="60" cy="60" r="49" fill="none" stroke="#e6efec" strokeWidth="9" />
+          <circle
+            cx="60" cy="60" r="49" fill="none" stroke="var(--primary)" strokeWidth="9"
+            strokeLinecap="round" strokeDasharray={confidenceCircumference}
+            strokeDashoffset={confidenceCircumference * (1 - confidence / 100)}
+            transform="rotate(-90 60 60)"
+          />
+          <text x="60" y="57" textAnchor="middle" fill="var(--text)" fontSize="23" fontWeight="750">
+            {confidence}%
+          </text>
+          <text x="60" y="75" textAnchor="middle" fill="var(--text-light)" fontSize="10">
+            confidence
+          </text>
+        </svg>
+      </section>
 
-      <p style={{ color: "#666", marginBottom: "24px" }}>
-        Cookie Theft Picture Assessment • 24 Sept 2026
-      </p>
+      <section className="report-stat-grid" aria-label="Assessment details">
+        <article className="card report-stat">
+          <span className="metric-icon"><Brain size={19} /></span>
+          <div><p>Model Used</p><h3>EXP8</h3></div>
+        </article>
+        <article className="card report-stat">
+          <span className="metric-icon"><ClipboardList size={19} /></span>
+          <div><p>Assessment</p><h3>Cookie Theft</h3></div>
+        </article>
+        <article className="card report-stat">
+          <span className="metric-icon"><ShieldCheck size={19} /></span>
+          <div><p>Status</p><h3>Completed</h3></div>
+        </article>
+      </section>
 
-      <div
-        style={{
-          background: "#2563eb",
-          color: "white",
-          borderRadius: "20px",
-          padding: "30px",
-          marginBottom: "24px",
-        }}
-      >
-        <h2 style={{ marginTop: 0 }}>Prediction</h2>
-
-        <h1 style={{ margin: "12px 0", fontSize: "42px" }}>
-          Alzheimer's
-        </h1>
-
-        <p style={{ margin: 0, fontSize: "18px" }}>
-          Confidence: <strong>89.33%</strong>
+      <section className="card report-explanation" aria-labelledby="report-analysis-heading">
+        <div className="report-section-heading">
+          <span className="metric-icon"><Brain size={19} /></span>
+          <div>
+            <h2 id="report-analysis-heading">Linguistic Analysis</h2>
+            <p>Speech patterns associated with this assessment</p>
+          </div>
+        </div>
+        <p className="report-explanation-copy">
+          Linguistic metrics and model explanations will appear here after the final EXP8 analysis integration.
         </p>
+        <div className="report-insight-list">
+          <div><span className="insight-dot" />Speech fluency metrics</div>
+          <div><span className="insight-dot" />Semantic coherence</div>
+          <div><span className="insight-dot" />Attention insights</div>
+        </div>
+      </section>
+
+      <div className="report-action-grid">
+        <button type="button" className="button button-primary">
+          <FileDown size={18} /> Download PDF Report
+        </button>
+        <button type="button" className="button button-secondary" onClick={() => navigate("/history")}>
+          <History size={18} /> View Previous Analyses
+        </button>
+        <button type="button" className="button button-secondary" onClick={() => navigate("/assessment")}>
+          <ArrowRight size={18} /> New Assessment
+        </button>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "2fr 1fr",
-          gap: "20px",
-          marginBottom: "24px",
-        }}
-      >
-        <div
-          style={{
-            background: "#fff",
-            border: "1px solid #ddd",
-            borderRadius: "18px",
-            padding: "20px",
-            minHeight: "260px",
-          }}
-        >
-          <h3 style={{ marginTop: 0 }}>Linguistic Analysis</h3>
-
-          <p style={{ color: "#666" }}>
-            Linguistic metrics and model explanations will appear here after
-            the EXP8 model integration.
-          </p>
-
-          <div
-            style={{
-              marginTop: "20px",
-              padding: "16px",
-              borderRadius: "12px",
-              background: "#f8fafc",
-            }}
-          >
-            <p style={{ margin: 0 }}>
-              • Speech fluency metrics
-            </p>
-            <p style={{ margin: "10px 0 0" }}>
-              • Semantic coherence
-            </p>
-            <p style={{ margin: "10px 0 0" }}>
-              • Attention insights
-            </p>
-          </div>
+      <aside className="assistant-teaser">
+        <span className="metric-icon"><Bot size={20} /></span>
+        <div>
+          <h3>AI Assistant</h3>
+          <p>Explanations and questions about your report will be available in a future update.</p>
         </div>
+        <span className="status-pill">Coming Soon</span>
+      </aside>
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-          }}
-        >
-          <button
-            style={{
-              padding: "14px",
-              borderRadius: "12px",
-              border: "none",
-              background: "#2563eb",
-              color: "white",
-              cursor: "pointer",
-            }}
-          >
-            Download PDF Report
-          </button>
-
-          <button
-            style={{
-              padding: "14px",
-              borderRadius: "12px",
-              border: "1px solid #ddd",
-              background: "white",
-              cursor: "pointer",
-            }}
-          >
-            View Previous Analyses
-          </button>
-
-          <div
-            style={{
-              marginTop: "20px",
-              borderRadius: "18px",
-              border: "1px dashed #94a3b8",
-              padding: "20px",
-              textAlign: "center",
-            }}
-          >
-            <div style={{ fontSize: "36px" }}>🤖</div>
-
-            <h3 style={{ marginBottom: "10px" }}>
-              AI Assistant
-            </h3>
-
-            <p
-              style={{
-                color: "#666",
-                fontSize: "14px",
-                marginBottom: "18px",
-              }}
-            >
-              Ask questions about this analysis and get explanations.
-            </p>
-
-            <button
-              style={{
-                padding: "12px 18px",
-                borderRadius: "999px",
-                border: "none",
-                background: "#0f172a",
-                color: "white",
-                cursor: "pointer",
-              }}
-            >
-              Coming Soon
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      <p className="medical-disclaimer">
+        This result is for educational screening only and is not a diagnosis. Please discuss health concerns with a qualified healthcare professional.
+      </p>
+    </Layout>
   );
 }
 
