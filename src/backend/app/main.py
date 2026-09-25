@@ -1,9 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.database.connection import test_database_connection
+from app.database.connection import Base, engine, test_database_connection
+from app.models.assessment import Assessment  # noqa: F401 - registers model metadata
+from app.api.assessment import router as assessment_router
 from app.api.predict import router as predict_router
 from app.api.transcribe import router as transcribe_router
+from app.services.predictor import load_predictor
 
 app = FastAPI(
     title="AlzDx API",
@@ -21,6 +24,13 @@ app.add_middleware(
 
 app.include_router(predict_router)
 app.include_router(transcribe_router)
+app.include_router(assessment_router)
+
+
+@app.on_event("startup")
+def create_database_tables():
+    load_predictor()
+    Base.metadata.create_all(bind=engine)
 
 
 @app.get("/")

@@ -7,6 +7,7 @@ from pathlib import Path
 from threading import Lock
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
+from app.services.transcription_cache import cache_transcription
 
 router = APIRouter(prefix="/api", tags=["transcription"])
 
@@ -222,7 +223,9 @@ async def transcribe_audio(file: UploadFile = File(...)):
             temporary_file.write(content)
             temporary_path = temporary_file.name
 
-        return await asyncio.to_thread(_transcribe_audio_file, temporary_path)
+        transcription = await asyncio.to_thread(_transcribe_audio_file, temporary_path)
+        cache_transcription(content, transcription)
+        return transcription
     except HTTPException:
         raise
     except ImportError as error:

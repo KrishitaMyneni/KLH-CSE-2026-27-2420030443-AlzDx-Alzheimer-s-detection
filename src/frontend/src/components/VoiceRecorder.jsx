@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Mic, Square, Upload, FileAudio } from "lucide-react";
-import { transcribeAudio } from "../services/transcription";
+import { transcribeAudio } from "../services/api";
 
-function VoiceRecorder({ onTranscriptReady }) {
+function VoiceRecorder({ onAudioReady, onTranscriptReady, onTranscriptionStateChange }) {
   const [isRecording, setIsRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [audioURL, setAudioURL] = useState("");
   const [audioName, setAudioName] = useState("");
+  const [audioError, setAudioError] = useState("");
   const [isTranscribing, setIsTranscribing] = useState(false);
-  const [transcriptionError, setTranscriptionError] = useState("");
 
   const recorderRef = useRef(null);
   const streamRef = useRef(null);
@@ -16,6 +16,7 @@ function VoiceRecorder({ onTranscriptReady }) {
   const timerRef = useRef(null);
   const audioRef = useRef(null);
   const fileInputRef = useRef(null);
+  const transcriptionRequestRef = useRef(0);
 
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
@@ -52,30 +53,33 @@ function VoiceRecorder({ onTranscriptReady }) {
     draw();
   };
 
-  const transcribeFile = async (file) => {
-    setTranscriptionError("");
-    onTranscriptReady?.("", null);
+  const selectAudio = async (file) => {
+    const requestId = ++transcriptionRequestRef.current;
+    setAudioError("");
+    onAudioReady?.(null);
     if (!file.type.startsWith("audio/") && !/\.(webm|wav|mp3|m4a|ogg|flac|mp4|mpeg|mpga)$/i.test(file.name)) {
-      setTranscriptionError("Unsupported file. Please choose a supported audio file.");
+      setAudioError("Unsupported file. Please choose a supported audio file.");
+      setIsTranscribing(false);
+      onTranscriptionStateChange?.(false);
       return;
     }
-    console.log(" Calling transcribe API...", file);
-
+    onAudioReady?.(file);
+    setIsTranscribing(true);
+    onTranscriptionStateChange?.(true);
     try {
-      setIsTranscribing(true);
-
       const result = await transcribeAudio(file);
-
-      console.log(" Transcript received:", result);
-
-      if (onTranscriptReady) {
-        onTranscriptReady(result.text || "", result.metrics || null);
+      if (requestId === transcriptionRequestRef.current) {
+        onTranscriptReady?.(result.text || "", result.metrics || null);
       }
-    } catch (err) {
-      console.error(" Transcription failed:", err);
-      setTranscriptionError(err.message || "Transcription failed. Please try another audio file.");
+    } catch (error) {
+      if (requestId === transcriptionRequestRef.current) {
+        setAudioError(error.message || "Transcription failed. Please try another audio file.");
+      }
     } finally {
-      setIsTranscribing(false);
+      if (requestId === transcriptionRequestRef.current) {
+        setIsTranscribing(false);
+        onTranscriptionStateChange?.(false);
+      }
     }
   };
 
@@ -145,7 +149,7 @@ function VoiceRecorder({ onTranscriptReady }) {
           if (bar) bar.style.height = "8px";
         });
 
-        await transcribeFile(file);
+        selectAudio(file);
       };
 
       recorder.start();
@@ -172,7 +176,7 @@ function VoiceRecorder({ onTranscriptReady }) {
     setIsRecording(false);
   };
 
-  const handleUpload = async (e) => {
+  const handleUpload = (e) => {
     const file = e.target.files?.[0];
 
     if (!file) return;
@@ -184,7 +188,7 @@ function VoiceRecorder({ onTranscriptReady }) {
     setAudioURL(URL.createObjectURL(file));
     setAudioName(file.name);
 
-    await transcribeFile(file);
+    selectAudio(file);
   };
 
   useEffect(() => {
@@ -272,9 +276,9 @@ function VoiceRecorder({ onTranscriptReady }) {
           />
         </div>
 
-        {transcriptionError && (
+        {audioError && (
           <div role="alert" style={{ color: "var(--danger)", fontWeight: 600, marginTop: 8 }}>
-            {transcriptionError}
+            {audioError}
           </div>
         )}
 

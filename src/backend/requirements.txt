@@ -9,3 +9,7 @@ ctranslate2
 av
 soundfile
 numpy
+torch
+transformers
+safetensors
+sentencepiece

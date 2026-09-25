@@ -12,33 +12,37 @@ import {
 import Layout from "../components/Layout";
 import ImageCard from "../components/ImageCard";
 import VoiceRecorder from "../components/VoiceRecorder";
-import { predict } from "../services/api";
+import { analyzeAssessment } from "../services/api";
 import cookieTheftImage from "../assets/cookie-theft-placeholder.svg";
 
 function Assessment() {
   const navigate = useNavigate();
 
   const [text, setText] = useState("");
+  const [audioFile, setAudioFile] = useState(null);
   const [result, setResult] = useState(null);
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [analysisError, setAnalysisError] = useState("");
   const confidenceValue = Math.min(100, Math.max(0, Number(result?.confidence) || 0));
 
   const handleAnalyze = async () => {
-    if (!text.trim()) {
-      alert("Please record/upload audio or enter a transcript first.");
+    if (!audioFile) {
+      alert("Please record or upload audio before analyzing.");
       return;
     }
 
     setLoading(true);
     setResult(null);
+    setAnalysisError("");
 
     try {
-      const response = await predict(text);
+      const response = await analyzeAssessment(audioFile, text);
       setResult(response);
     } catch (err) {
       console.error(err);
-      alert("Analysis failed.");
+      setAnalysisError(err.message || "Assessment analysis failed.");
     } finally {
       setLoading(false);
     }
@@ -54,6 +58,14 @@ function Assessment() {
 
       {/* Voice Recorder */}
       <VoiceRecorder
+        onTranscriptionStateChange={setIsTranscribing}
+        onAudioReady={(file) => {
+          setAudioFile(file);
+          setText("");
+          setMetrics(null);
+          setResult(null);
+          setAnalysisError("");
+        }}
         onTranscriptReady={(transcript, extractedMetrics) => {
           setText(transcript);
           setMetrics(extractedMetrics);
@@ -76,8 +88,7 @@ function Assessment() {
         <p
           style={{ color: "var(--text-light)", marginBottom: "16px" }}
         >
-          Your transcript is generated automatically after recording or uploading
-          audio. You can edit it before running the analysis.
+          Your transcript is generated automatically after recording or uploading audio. You can edit it before analysis.
         </p>
 
         <textarea
@@ -97,14 +108,16 @@ function Assessment() {
       {/* Analyze */}
       <button
         onClick={handleAnalyze}
-        disabled={loading || !text.trim()}
+        disabled={loading || isTranscribing || !audioFile || !text.trim()}
         className="button button-primary"
         style={{ width: "100%", minHeight: 54, marginTop: 22, fontSize: 16 }}
         aria-busy={loading}
       >
         {loading && <span className="loading-spinner" aria-hidden="true" />}
-        {loading ? "Analyzing assessment..." : "Analyze Assessment"}
+        {isTranscribing ? "Transcribing audio..." : loading ? "Analyzing assessment..." : "Analyze Assessment"}
       </button>
+
+      {analysisError && <div role="alert" style={{ color: "var(--danger)", marginTop: 12 }}>{analysisError}</div>}
 
       {loading && (
         <div className="result-skeleton" aria-label="Loading assessment results" role="status">
@@ -127,7 +140,7 @@ function Assessment() {
               className="confidence-ring"
               viewBox="0 0 120 120"
               role="img"
-              aria-label={`Confidence ${result.confidence}%`}
+              aria-label={`Confidence ${Number(result.confidence).toFixed(1)}%`}
             >
               <circle cx="60" cy="60" r="49" fill="none" stroke="#e6efec" strokeWidth="9" />
               <circle
@@ -138,7 +151,7 @@ function Assessment() {
                 style={{ transition: "stroke-dashoffset 700ms ease" }}
               />
               <text x="60" y="57" textAnchor="middle" fill="var(--text)" fontSize="23" fontWeight="750">
-                {result.confidence}%
+                {Number(result.confidence).toFixed(1) + "%"}
               </text>
               <text x="60" y="75" textAnchor="middle" fill="var(--text-light)" fontSize="10">
                 confidence
