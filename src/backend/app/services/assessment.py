@@ -1,3 +1,5 @@
+from uuid import UUID
+from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.models.assessment import Assessment
@@ -14,8 +16,19 @@ METRIC_FIELDS = (
 )
 
 
-def create_assessment(db: Session, *, transcript, raw_words, prediction, confidence, metrics, audio_duration):
+def create_assessment(
+    db: Session,
+    *,
+    transcript: str,
+    raw_words: list,
+    prediction: str,
+    confidence: float,
+    metrics: dict,
+    audio_duration: float,
+    user_id: Optional[UUID] = None,
+):
     assessment = Assessment(
+        user_id=user_id,
         transcript=transcript,
         raw_words=raw_words,
         prediction=prediction,

@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Brain, ShieldCheck, FileDown, History } from "lucide-react";
 import Layout from "../components/Layout";
+import { downloadAlzDxPdf } from "../services/pdfReportGenerator";
 
 function Report() {
   const navigate = useNavigate();
@@ -128,6 +129,16 @@ function Report() {
         }}
       >
         <button
+          onClick={() => {
+            downloadAlzDxPdf({
+              id: "report-demo-id",
+              prediction,
+              confidence,
+              transcript: "Speech assessment description",
+              metrics: {},
+              created_at: new Date().toISOString(),
+            });
+          }}
           style={{
             background: "var(--primary)",
             color: "white",
@@ -143,7 +154,7 @@ function Report() {
           }}
         >
           <FileDown size={18} />
-          Download PDF
+          Generate PDF
         </button>
 
         <button

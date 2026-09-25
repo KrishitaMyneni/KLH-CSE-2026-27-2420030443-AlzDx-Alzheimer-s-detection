@@ -13,3 +13,6 @@ torch
 transformers
 safetensors
 sentencepiece
+reportlab
+httpx
+google-genai

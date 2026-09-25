@@ -2,18 +2,23 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Activity,
+  Bot,
   CheckCircle2,
   Clock3,
+  FileDown,
   MessageCircle,
   Pause,
   Repeat2,
+  Sparkles,
   Timer,
 } from "lucide-react";
 import Layout from "../components/Layout";
 import ImageCard from "../components/ImageCard";
 import VoiceRecorder from "../components/VoiceRecorder";
+import ChatAssistant from "../components/ChatAssistant";
 import { analyzeAssessment } from "../services/api";
-import cookieTheftImage from "../assets/cookie-theft-placeholder.svg";
+import { downloadAlzDxPdf } from "../services/pdfReportGenerator";
+import cookieTheftImage from "../assets/cookie-theft.png";
 
 function Assessment() {
   const navigate = useNavigate();
@@ -25,6 +30,48 @@ function Assessment() {
   const [loading, setLoading] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [analysisError, setAnalysisError] = useState("");
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [initialChatPrompt, setInitialChatPrompt] = useState("");
+
+  const handleAskAiAboutMetric = (label, val) => {
+    let prompt = "";
+    if (label === "Speech Rate") {
+      prompt = val != null ? `What does my speech rate of ${val} WPM mean?` : "What does speech rate mean in this screening?";
+    } else if (label === "Pause Count") {
+      prompt = val != null ? `What is pause count and what does my count of ${val} indicate?` : "What is pause count?";
+    } else if (label === "Hesitations") {
+      prompt = val != null ? `Why are hesitations measured and what does my count of ${val} mean?` : "Why are hesitations measured?";
+    } else if (label === "Repetitions") {
+      prompt = val != null ? `Why are repetitions measured and what does my count of ${val} mean?` : "Why are repetitions measured?";
+    } else if (label === "Confidence") {
+      prompt = val != null ? `Why ${Number(val).toFixed(1)}% confidence?` : "Why is this confidence score assigned?";
+    } else {
+      prompt = `Can you explain ${label}?`;
+    }
+    setInitialChatPrompt(prompt);
+    setIsChatOpen(true);
+  };
+
+  const handleGeneratePdf = () => {
+    if (!result) return;
+    setIsGeneratingPdf(true);
+    try {
+      downloadAlzDxPdf({
+        id: result.assessment_id || result.id,
+        prediction: result.prediction,
+        confidence: result.confidence,
+        transcript: result.transcript || text,
+        metrics: result.metrics || metrics,
+        created_at: result.created_at,
+      });
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      alert("Could not generate PDF. Please try again.");
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
   const confidenceValue = Math.min(100, Math.max(0, Number(result?.confidence) || 0));
 
   const handleAnalyze = async () => {
@@ -136,27 +183,39 @@ function Assessment() {
               <h1 className="result-title" id="result-heading">{result.prediction}</h1>
               <p className="result-copy">Assessment screening outcome</p>
             </div>
-            <svg
-              className="confidence-ring"
-              viewBox="0 0 120 120"
-              role="img"
-              aria-label={`Confidence ${Number(result.confidence).toFixed(1)}%`}
-            >
-              <circle cx="60" cy="60" r="49" fill="none" stroke="#e6efec" strokeWidth="9" />
-              <circle
-                cx="60" cy="60" r="49" fill="none" stroke="var(--primary)" strokeWidth="9"
-                strokeLinecap="round" strokeDasharray={`${2 * Math.PI * 49}`}
-                strokeDashoffset={`${2 * Math.PI * 49 * (1 - confidenceValue / 100)}`}
-                transform="rotate(-90 60 60)"
-                style={{ transition: "stroke-dashoffset 700ms ease" }}
-              />
-              <text x="60" y="57" textAnchor="middle" fill="var(--text)" fontSize="23" fontWeight="750">
-                {Number(result.confidence).toFixed(1) + "%"}
-              </text>
-              <text x="60" y="75" textAnchor="middle" fill="var(--text-light)" fontSize="10">
-                confidence
-              </text>
-            </svg>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <svg
+                className="confidence-ring"
+                viewBox="0 0 120 120"
+                role="img"
+                aria-label={`Confidence ${Number(result.confidence).toFixed(1)}%`}
+              >
+                <circle cx="60" cy="60" r="49" fill="none" stroke="#e6efec" strokeWidth="9" />
+                <circle
+                  cx="60" cy="60" r="49" fill="none" stroke="var(--primary)" strokeWidth="9"
+                  strokeLinecap="round" strokeDasharray={`${2 * Math.PI * 49}`}
+                  strokeDashoffset={`${2 * Math.PI * 49 * (1 - confidenceValue / 100)}`}
+                  transform="rotate(-90 60 60)"
+                  style={{ transition: "stroke-dashoffset 700ms ease" }}
+                />
+                <text x="60" y="57" textAnchor="middle" fill="var(--text)" fontSize="23" fontWeight="750">
+                  {Number(result.confidence).toFixed(1) + "%"}
+                </text>
+                <text x="60" y="75" textAnchor="middle" fill="var(--text-light)" fontSize="10">
+                  confidence
+                </text>
+              </svg>
+              <button
+                type="button"
+                onClick={() => handleAskAiAboutMetric("Confidence", result.confidence)}
+                className="metric-sparkle-btn"
+                style={{ marginTop: "6px" }}
+                title="Ask AI about confidence score"
+                aria-label="Ask AI about confidence score"
+              >
+                <Sparkles size={11} /> Explain ✨
+              </button>
+            </div>
           </div>
 
           <div className="result-content">
@@ -165,19 +224,32 @@ function Assessment() {
 
               <div className="metric-grid">
                 {[
-                  { label: "Speech Rate", key: "speech_rate", suffix: " WPM", Icon: Activity },
-                  { label: "Pause Count", key: "pause_count", suffix: "", Icon: Pause },
+                  { label: "Speech Rate", key: "speech_rate", suffix: " WPM", Icon: Activity, sparkle: true },
+                  { label: "Pause Count", key: "pause_count", suffix: "", Icon: Pause, sparkle: true },
                   { label: "Total Pause", key: "total_pause_seconds", suffix: " s", Icon: Clock3 },
                   { label: "Average Pause", key: "average_pause_seconds", suffix: " s", Icon: Timer },
-                  { label: "Hesitations", key: "hesitation_count", suffix: "", Icon: MessageCircle },
-                  { label: "Repetitions", key: "repetition_count", suffix: "", Icon: Repeat2 },
-                ].map(({ label, key, suffix, Icon }) => {
-                  const value = metrics?.[key];
+                  { label: "Hesitations", key: "hesitation_count", suffix: "", Icon: MessageCircle, sparkle: true },
+                  { label: "Repetitions", key: "repetition_count", suffix: "", Icon: Repeat2, sparkle: true },
+                ].map(({ label, key, suffix, Icon, sparkle }) => {
+                  const value = (result?.metrics || metrics)?.[key];
                   return (
                     <div className="metric-card" key={key}>
                       <span className="metric-icon"><Icon size={18} aria-hidden="true" /></span>
-                      <div>
-                        <div className="metric-label">{label}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px" }}>
+                          <div className="metric-label">{label}</div>
+                          {sparkle && (
+                            <button
+                              type="button"
+                              onClick={() => handleAskAiAboutMetric(label, value)}
+                              className="metric-sparkle-btn"
+                              title={`Ask AI about ${label}`}
+                              aria-label={`Ask AI about ${label}`}
+                            >
+                              <Sparkles size={11} /> ✨
+                            </button>
+                          )}
+                        </div>
                         <strong className="metric-value">
                         {value === null || value === undefined ? "Unavailable" : `${value}${suffix}`}
                         </strong>
@@ -190,9 +262,14 @@ function Assessment() {
 
             <div className="result-actions">
               <button
+                type="button"
+                onClick={handleGeneratePdf}
+                disabled={isGeneratingPdf}
                 className="button button-primary"
+                id="generate-pdf-btn"
               >
-                Download PDF
+                <FileDown size={18} aria-hidden="true" />
+                {isGeneratingPdf ? "Generating PDF..." : "Generate PDF"}
               </button>
 
               <button
@@ -203,11 +280,21 @@ function Assessment() {
               </button>
 
               <button
+                type="button"
+                onClick={() => setIsChatOpen(true)}
                 className="button button-secondary"
-                disabled
-                title="AI Assistant will be available in a future update"
+                id="ask-ai-btn"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  borderColor: "var(--primary)",
+                  color: "var(--primary-dark)",
+                }}
               >
-                AI Assistant (Soon)
+                <Bot size={18} aria-hidden="true" />
+                Ask AI about my results
               </button>
             </div>
           </div>
@@ -216,6 +303,14 @@ function Assessment() {
           </p>
         </section>
       )}
+      <ChatAssistant
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        assessmentId={result?.assessment_id || result?.id}
+        assessmentData={result}
+        initialPrompt={initialChatPrompt}
+        onClearInitialPrompt={() => setInitialChatPrompt("")}
+      />
     </Layout>
   );
 }
