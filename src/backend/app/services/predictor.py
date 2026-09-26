@@ -67,7 +67,7 @@ def load_predictor():
             raise FileNotFoundError(f"Production model checkpoint not found: {CHECKPOINT_PATH}")
 
         tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
-        deberta = AutoModel.from_pretrained(BASE_MODEL)
+        deberta = AutoModel.from_pretrained(BASE_MODEL, low_cpu_mem_usage=True)
         model = DebertaAttentionMeanClassifier(deberta)
         state_dict = load_file(str(CHECKPOINT_PATH), device="cpu")
         model.load_state_dict(state_dict, strict=True)

@@ -10,7 +10,6 @@ from app.api.chat import router as chat_router
 from app.api.predict import router as predict_router
 from app.api.transcribe import router as transcribe_router
 from app.services.auth import hash_password
-from app.services.predictor import load_predictor
 
 app = FastAPI(
     title="AlzDx API",
@@ -35,7 +34,6 @@ app.include_router(auth_router)
 
 @app.on_event("startup")
 def create_database_tables():
-    load_predictor()
     Base.metadata.create_all(bind=engine)
 
     session = SessionLocal()
