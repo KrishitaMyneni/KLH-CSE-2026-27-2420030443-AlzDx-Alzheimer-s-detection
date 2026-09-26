@@ -8,17 +8,14 @@ function Layout({ title, subtitle, children }) {
   const { user, isAuthenticated } = useAuth();
 
   const navItems = [
-    { label: "Dashboard", path: "/", icon: LayoutDashboard },
+    { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
     { label: "Assessment", path: "/assessment", icon: Brain },
     { label: "Reports", path: "/report", icon: FileText },
     { label: "History", path: "/history", icon: History },
   ];
 
   const isNavActive = (path) => {
-    if (path === "/") {
-      return location.pathname === "/";
-    }
-    return location.pathname.startsWith(path);
+    return location.pathname === path || (path !== "/dashboard" && location.pathname.startsWith(path));
   };
 
   const getUsernameInitial = () => {
@@ -34,7 +31,7 @@ function Layout({ title, subtitle, children }) {
           <button
             type="button"
             className="brand-button"
-            onClick={() => navigate("/")}
+            onClick={() => navigate(isAuthenticated ? "/dashboard" : "/")}
             aria-label="AlzDx home"
           >
             <span className="brand-mark">
@@ -96,7 +93,7 @@ function Layout({ title, subtitle, children }) {
               <button
                 type="button"
                 className="profile-button"
-                onClick={() => navigate("/login")}
+                onClick={() => navigate("/")}
                 aria-label="Sign In"
                 style={{
                   display: "flex",

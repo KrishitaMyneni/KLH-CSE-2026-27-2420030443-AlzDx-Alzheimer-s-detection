@@ -1,17 +1,31 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Brain, Lock, User, Mail, ArrowRight, Eye, EyeOff, CheckCircle2, AlertCircle } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
-function Login() {
+function Login({ initialMode = "login" }) {
   const navigate = useNavigate();
-  const { login, register } = useAuth();
+  const { login, register, isAuthenticated } = useAuth();
 
-  const [mode, setMode] = useState("login"); // "login" | "register"
+  const [mode, setMode] = useState(initialMode); // "login" | "register"
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+
+  // Sync mode if initialMode prop changes
+  useEffect(() => {
+    if (initialMode) {
+      setMode(initialMode);
+    }
+  }, [initialMode]);
+
+  // If already authenticated, redirect directly to dashboard
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   // Login form state
   const [username, setUsername] = useState("");
@@ -34,8 +48,7 @@ function Login() {
         }
         await login(username.trim(), password);
         setSuccessMsg("Signed in successfully! Opening dashboard...");
-        // Directly navigate to dashboard
-        setTimeout(() => navigate("/", { replace: true }), 300);
+        setTimeout(() => navigate("/dashboard", { replace: true }), 300);
       } else {
         if (!username.trim() || !password) {
           throw new Error("Username and password are required.");
@@ -54,8 +67,7 @@ function Login() {
           role: "Patient",
         });
         setSuccessMsg("Account created successfully! Opening dashboard...");
-        // Directly navigate to dashboard
-        setTimeout(() => navigate("/", { replace: true }), 300);
+        setTimeout(() => navigate("/dashboard", { replace: true }), 300);
       }
     } catch (err) {
       setError(err.message || "Authentication error occurred.");
@@ -78,13 +90,11 @@ function Login() {
     >
       {/* Brand Header */}
       <div style={{ textAlign: "center", marginBottom: "28px" }}>
-        <Link
-          to="/"
+        <div
           style={{
             display: "inline-flex",
             alignItems: "center",
             gap: "10px",
-            textDecoration: "none",
             color: "var(--text)",
             marginBottom: "8px",
           }}
@@ -107,7 +117,7 @@ function Login() {
           <span style={{ fontSize: "28px", fontWeight: "800", letterSpacing: "-0.5px" }}>
             Alz<span style={{ color: "var(--primary)" }}>Dx</span>
           </span>
-        </Link>
+        </div>
         <p style={{ color: "var(--text-light)", fontSize: "14px", margin: 0 }}>
           Speech Biomarker Screening & Assessment Platform
         </p>
@@ -366,6 +376,73 @@ function Login() {
               </button>
             </div>
           </div>
+
+          {/* Quick Demo Logins Helper */}
+          {mode === "login" && (
+            <div
+              style={{
+                padding: "10px 12px",
+                borderRadius: "10px",
+                background: "var(--background)",
+                border: "1px dashed var(--border)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+              }}
+            >
+              <span style={{ fontSize: "11px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-light)" }}>
+                Quick Demo Accounts
+              </span>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUsername("doctor_smith");
+                    setPassword("alzdx2026");
+                    setError("");
+                  }}
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: "6px",
+                    border: "1px solid var(--border)",
+                    background: "white",
+                    color: "var(--primary-dark)",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                >
+                  🩺 Dr. Smith (Doctor)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUsername("demo");
+                    setPassword("demo1234");
+                    setError("");
+                  }}
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: "6px",
+                    border: "1px solid var(--border)",
+                    background: "white",
+                    color: "var(--primary-dark)",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                >
+                  👤 Alex Morgan (Demo)
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Submit Button */}
           <button

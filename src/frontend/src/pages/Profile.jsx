@@ -57,7 +57,7 @@ function Profile() {
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate("/");
   };
 
   const handleSaveProfile = async (e) => {
@@ -150,7 +150,7 @@ function Profile() {
           </p>
           <button
             type="button"
-            onClick={() => navigate("/login")}
+            onClick={() => navigate("/")}
             style={{
               background: "var(--primary)",
               color: "white",
